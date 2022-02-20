@@ -8,7 +8,7 @@ const nftContractAddress = "0xc64bBCf5a75A078Fb899952733B26Bb85d3a2FCb";
 
 const MintNFT = () => {
   const [errorMessage, setErrorMessage] = useState(null);
-  // const [uploadedFile, setUploadedFile] = useState();
+  const [uploadedFile, setUploadedFile] = useState();
   const [imageView, setImageView] = useState();
   const [metaDataURL, setMetaDataURl] = useState();
   const [txURL, setTxURL] = useState();
@@ -22,29 +22,36 @@ const MintNFT = () => {
   const [rent, setRent] = useState(0);
   const [donation, setDonation] = useState(0);
   const [thumbnail, setThumbnail] = useState();
-  const [thumbnailURL, setThumbnailURL] = useState([]);
   const [original, setOriginal] = useState();
-  const [originalURL, setOriginalURL] = useState([]);
+  // const [thumbnailArray, setThumbnailArray] = useState([]);
+  // const [originalArray, setOriginalArray]=useState([]);
 
-  const handleThumbnailUpload = (event) => {
-    console.log("file is uploaded");
-    setThumbnail(event.target.files[0]);
+  // const handleFileUpload = (event) => {
+  //   console.log("file is uploaded");
+  //   setUploadedFile(event.target.files[0]);
+  //   setTxStatus("");
+  //   setImageView("");
+  //   setMetaDataURl("");
+  //   setTxURL("");
+  // };
+
+  const handleThumbnail = (event) => {
+    setThumbnail(event.target.files);
     setTxStatus("");
     setImageView("");
     setMetaDataURl("");
     setTxURL("");
   };
 
-  const handleOriginalUpload = (event) => {
-    console.log("file is uploaded");
-    setOriginal(event.target.files[0]);
+  const handleOriginal = (event) => {
+    setOriginal(event.target.files);
     setTxStatus("");
     setImageView("");
     setMetaDataURl("");
     setTxURL("");
   };
 
-  // const addThumbnail = async (event, uploadedFile) => {
+  // const mintNFTToken = async (event, uploadedFile) => {
   //   event.preventDefault();
   //   //1. upload NFT content via NFT.storage
   //   const metaData = await uploadNFTContent(uploadedFile);
@@ -56,49 +63,39 @@ const MintNFT = () => {
   //   previewNFT(metaData, mintNFTTx);
   // };
 
-  const addThumbnail = async (event, thumbnail) => {
+  const mintNFTToken = async (event) => {
     event.preventDefault();
+    //1. upload NFT content via NFT.storage
+    const metaData = await uploadNFTContent();
+  };
+
+  const uploadNFTContent = async () => {
     const nftStorage = new NFTStorage({ token: APIKEY });
     try {
       setTxStatus("Uploading NFT to IPFS & Filecoin via NFT.storage.");
       const metaData = await nftStorage.store({
-        name: "LUV NFT",
-        description:
-          "This is a Harmony NFT collenction stored on IPFS & Filecoin.",
-        image: thumbnail,
+        name:"LUV NFT",
+        title,
+        excert,
+        description,
+        type,
+        rooms,
+        area,
+        rent,
+        donation,
+        image:thumbnail
       });
-      const tmpThumbnailURL = thumbnailURL;
-      tmpThumbnailURL.push(getIPFSGatewayURL(metaData.data.image.pathname));
-      setThumbnailURL(tmpThumbnailURL);
-      console.log(tmpThumbnailURL);
-      return metaData;
-    } catch (error) {
-      setErrorMessage("Could not save Thumbnail Image to NFT.Storage - Aborted minting.");
-      console.log(error);
-    }
-  };
-
-  const addOriginal = async (event, original) => {
-    event.preventDefault();
-    const nftStorage = new NFTStorage({ token: APIKEY });
-    try {
-      setTxStatus("Uploading Original Image to IPFS & Filecoin via NFT.storage.");
-      const metaData = await nftStorage.store({
-        name: "LUV NFT",
-        description:
-          "This is a Harmony NFT collenction stored on IPFS & Filecoin.",
-        image: original,
-      });
-      const tmpOriginalURL = originalURL;
-      tmpOriginalURL.push(getIPFSGatewayURL(metaData.data.image.pathname));
-      setOriginalURL(tmpOriginalURL);
-      console.log(tmpOriginalURL);
+      alert(0);
+      setMetaDataURl(getIPFSGatewayURL(metaData.url));
       return metaData;
     } catch (error) {
       setErrorMessage("Could not save NFT to NFT.Storage - Aborted minting.");
       console.log(error);
     }
   };
+
+  console.log("thumbnail", thumbnail && thumbnail[0]);
+  console.log("metaDataURL", metaDataURL);
 
   // const sendTxToHarmony = async (metadata) => {
   //   try {
@@ -130,6 +127,14 @@ const MintNFT = () => {
     let ipfsGateWayURL = `https://${urlArray[2]}.ipfs.dweb.link/${urlArray[3]}`;
     return ipfsGateWayURL;
   };
+
+  // const thumbnailImages=()=>{
+  //   if(thumbnail){
+  //     for(const [key, value] of Object.entries(thumbnail)) {
+  //       console.log(`${key}: ${value}`);
+  //     }
+  //   }else {}
+  // }
 
   return (
     <div className="MintNFT">
@@ -207,13 +212,17 @@ const MintNFT = () => {
           value={donation}
         />
         <br />
-        <input type="file" onChange={handleThumbnailUpload}></input>
-        <button onClick={(e) => addThumbnail(e, thumbnail)}>
-          Add Thumbnail
+        {/* <input type="file" onChange={handleFileUpload}></input> */}
+        <input type="file" onChange={handleThumbnail} multiple></input>
+        <button onClick={(e) => mintNFTToken(e, thumbnail)}>
+          Set Thumbnail
         </button>
         <br />
-        <input type="file" onChange={handleOriginalUpload}></input>
-        <button onClick={(e) => addOriginal(e, original)}>Add Original</button>
+        <button onClick={(e) => mintNFTToken(e, original)}>
+          Set Original
+        </button>
+        <br />
+        <button onClick={(e) => mintNFTToken(e, uploadedFile)}>Mint NFT</button>
       </form>
       {txStatus && <p>{txStatus}</p>}
       {imageView && (
