@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { NFTStorage } from "nft.storage";
-import HarmonyNFT from "../abi/HarmonyNFT.json";
+import LuvNFT from "../abi/LuvNFT.json";
 import { ethers } from "ethers";
 const APIKEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDdhMzc2OEJBNDI1RDdEZmFFQjkwNkQzRTA2NzE0ZjhEODZEM2QyRmYiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY0NDU3MjYwMzU5MywibmFtZSI6ImRyYWdvbiJ9.2o97SzibzFeVNJR8go85Qrm3K5QYnD_ooNP3gYv90xI";
-const nftContractAddress = "0xc64bBCf5a75A078Fb899952733B26Bb85d3a2FCb";
+const nftContractAddress = "0x7c9D35047469dA7C83Bf8b54bccDDe174D0b8d19";
 
 const MintNFT = () => {
   const [errorMessage, setErrorMessage] = useState(null);
@@ -25,6 +25,10 @@ const MintNFT = () => {
   const [thumbnailURL, setThumbnailURL] = useState([]);
   const [original, setOriginal] = useState();
   const [originalURL, setOriginalURL] = useState([]);
+  const [geometryType, setGeometryType] = useState("Point");
+  const [longitude, setLongitude] = useState(0.0);
+  const [latitude, setLatitude] = useState(0.0);
+  const [price, setPrice]=useState(0);
 
   const handleThumbnailUpload = (event) => {
     console.log("file is uploaded");
@@ -73,7 +77,9 @@ const MintNFT = () => {
       console.log(tmpThumbnailURL);
       return metaData;
     } catch (error) {
-      setErrorMessage("Could not save Thumbnail Image to NFT.Storage - Aborted minting.");
+      setErrorMessage(
+        "Could not save Thumbnail Image to NFT.Storage - Aborted minting."
+      );
       console.log(error);
     }
   };
@@ -82,7 +88,9 @@ const MintNFT = () => {
     event.preventDefault();
     const nftStorage = new NFTStorage({ token: APIKEY });
     try {
-      setTxStatus("Uploading Original Image to IPFS & Filecoin via NFT.storage.");
+      setTxStatus(
+        "Uploading Original Image to IPFS & Filecoin via NFT.storage."
+      );
       const metaData = await nftStorage.store({
         name: "LUV NFT",
         description:
@@ -99,6 +107,18 @@ const MintNFT = () => {
       console.log(error);
     }
   };
+
+  const check=async(event)=>{
+    event.preventDefault();
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const connectedContract = new ethers.Contract(
+      nftContractAddress,
+      LuvNFT.abi,
+      provider.getSigner()
+    );
+    const id = await connectedContract.getTokenDetails(1);
+    console.log(JSON.parse(id.nft_info))
+  }
 
   // const sendTxToHarmony = async (metadata) => {
   //   try {
@@ -129,6 +149,60 @@ const MintNFT = () => {
     let urlArray = ipfsURL.split("/");
     let ipfsGateWayURL = `https://${urlArray[2]}.ipfs.dweb.link/${urlArray[3]}`;
     return ipfsGateWayURL;
+  };
+
+  const mintNFTToken = async (event) => {
+    event.preventDefault();
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const connectedContract = new ethers.Contract(
+      nftContractAddress,
+      LuvNFT.abi,
+      provider.getSigner()
+    );
+    const id = await connectedContract.nextId();
+
+    const images = [];
+    if (thumbnailURL.length != originalURL.length) {
+      alert("amount of thumbnail must be the same as original");
+      return;
+    }
+    for (let i = 0; i < thumbnailURL.length; i++) {
+      images.push({
+        original: originalURL[i],
+        thumbnail: thumbnailURL[i],
+      });
+    }
+    const nftInfo = {
+      type: "Feature",
+      properties: {
+        id: `item-${Number(id)}`,
+        title,
+        excert,
+        description,
+        images,
+        type,
+        rooms,
+        area,
+        rent,
+        donation,
+      },
+      geometry: {
+        type: geometryType,
+        coordinates: [longitude, latitude],
+      },
+    };
+    console.log(nftInfo)
+
+    try {
+      setTxStatus("Minting...");
+      const mintNFTTx = await connectedContract.mint(JSON.stringify(nftInfo), price);
+      setThumbnailURL([]);
+      setOriginalURL([]);
+      return mintNFTTx;
+    } catch (error) {
+      setErrorMessage("Failed to send tx to Harmony.");
+      console.log(error);
+    }
   };
 
   return (
@@ -207,13 +281,54 @@ const MintNFT = () => {
           value={donation}
         />
         <br />
-        <input type="file" onChange={handleThumbnailUpload}></input>
+        Geometry Type
+        <input
+          type="text"
+          onChange={(e) => {
+            setGeometryType(e.target.value);
+          }}
+          value={geometryType}
+        />
+        <br />
+        Longitude
+        <input
+          type="number"
+          onChange={(e) => {
+            setLongitude(e.target.value);
+          }}
+          step="0.00001"
+          value={longitude}
+        />
+        <br />
+        Latitude
+        <input
+          type="number"
+          onChange={(e) => {
+            setLatitude(e.target.value);
+          }}
+          step="0.00001"
+          value={latitude}
+        />
+        <br />
+        Price
+        <input
+          type="number"
+          onChange={(e) => {
+            setPrice(e.target.value);
+          }}
+          value={price}
+        />
+        <br />
+        <input type="file" onChange={handleThumbnailUpload} multiple></input>
         <button onClick={(e) => addThumbnail(e, thumbnail)}>
           Add Thumbnail
         </button>
         <br />
-        <input type="file" onChange={handleOriginalUpload}></input>
+        <input type="file" onChange={handleOriginalUpload} multiple></input>
         <button onClick={(e) => addOriginal(e, original)}>Add Original</button>
+        <br />
+        <button onClick={mintNFTToken}>Mint NFT</button><br/>
+        <button onClick={check}>Check Metadata</button>
       </form>
       {txStatus && <p>{txStatus}</p>}
       {imageView && (
